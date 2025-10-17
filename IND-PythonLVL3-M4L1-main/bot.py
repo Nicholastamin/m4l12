@@ -31,6 +31,27 @@ async def rating(ctx):
     res = f'|USER_NAME    |COUNT_PRIZE|\n{"_"*26}\n' + res
     await ctx.send(f"```\n{res}\n```")
 @bot.command()
+async def resend(ctx):
+    """Kirim ulang semua gambar hadiah yang pernah dimenangkan user."""
+    user_id = ctx.author.id
+    user_name = ctx.author.name
+
+    images = manager.get_winners_img(user_id)
+
+    if not images:
+        await ctx.send(f"{user_name}, kamu belum pernah menang lelang 😅")
+        return
+
+    await ctx.send(f"{user_name}, ini hadiah yang pernah kamu menangkan! 🎁")
+
+    # Kirim semua gambar satu per satu
+    for (img_path,) in images:
+        full_path = f"img/{img_path}"
+        if os.path.exists(full_path):
+            await ctx.send(file=discord.File(full_path))
+        else:
+            await ctx.send(f"⚠️ Gambar {img_path} tidak ditemukan di folder img/")
+@bot.command()
 async def get_my_score(ctx):
     user_id = str(ctx.author.id)
     m = DatabaseManager(DATABASE)
