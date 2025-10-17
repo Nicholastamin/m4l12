@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
-from logic import DatabaseManager, hide_img
+import cv2
+from logic import DatabaseManager, hide_img, create_collage
 from config import TOKEN, DATABASE
 import os
 
@@ -29,6 +30,21 @@ async def rating(ctx):
     res = '\n'.join(res)
     res = f'|USER_NAME    |COUNT_PRIZE|\n{"_"*26}\n' + res
     await ctx.send(f"```\n{res}\n```")
+@bot.command()
+async def get_my_score(ctx):
+    user_id = str(ctx.author.id)
+    m = DatabaseManager(DATABASE)
+    info = m.get_winners_img(user_id)
+    prizes = [x[0] for x in info]
+
+    image_paths = os.listdir('img')
+    image_paths = [f'img/{x}' if x in prizes else f'hidden_img/{x}' for x in image_paths]
+
+    collage = create_collage(image_paths)
+    output_path = "user_collage.jpg"
+    cv2.imwrite(output_path, collage)
+
+    await ctx.send(file=discord.File(output_path))
 
 @bot.event
 async def on_interaction(interaction):

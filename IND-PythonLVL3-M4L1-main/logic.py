@@ -3,7 +3,8 @@ from datetime import datetime
 from config import DATABASE 
 import os
 import cv2
-
+import numpy as np
+from math import sqrt, ceil, floor
 class DatabaseManager:
     def __init__(self, database):
         self.database = database
@@ -99,7 +100,16 @@ class DatabaseManager:
             cur.execute('SELECT count(*) FROM winners WHERE prize_id = ? ', (prize_id, ))
             return cur.fetchall()[0][0]
    
-   
+    def get_winners_img(self, user_id):
+        conn = sqlite3.connect(self.database)
+        with conn:
+            cur = conn.cursor()
+            cur.execute('''
+                SELECT image FROM winners
+                INNER JOIN prizes ON winners.prize_id = prizes.prize_id
+                WHERE user_id = ?
+            ''', (user_id,))
+            return cur.fetchall()
     
     def get_rating(self):
         conn = sqlite3.connect(self.database)
@@ -113,7 +123,36 @@ ORDER BY total DESC
 LIMIT 5;
     ''')
             return cur.fetchall()
-    
+
+def create_collage(image_paths):
+
+    images = []
+    for path in image_paths:
+        image = cv2.imread(path)
+        if image is None:
+            print(f"Gagal membaca gambar: {path}")
+            continue
+        images.append(image)
+
+    if not images:
+        raise ValueError("Tidak ada gambar yang berhasil dibaca!")
+
+    num_images = len(images)
+    num_cols = floor(sqrt(num_images))
+    num_rows = ceil(num_images / num_cols)
+
+    collage = np.zeros(
+        (num_rows * images[0].shape[0], num_cols * images[0].shape[1], 3),
+        dtype=np.uint8
+    )
+
+    for i, image in enumerate(images):
+        row = i // num_cols
+        col = i % num_cols
+        collage[row * image.shape[0]:(row + 1) * image.shape[0],
+                col * image.shape[1]:(col + 1) * image.shape[1], :] = image
+
+    return collage    
   
 def hide_img(img_name):
     image = cv2.imread(f'img/{img_name}')
