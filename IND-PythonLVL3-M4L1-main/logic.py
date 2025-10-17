@@ -91,6 +91,28 @@ class DatabaseManager:
             cur = conn.cursor() 
             cur.execute("SELECT * FROM prizes ORDER BY RANDOM()")
             return cur.fetchall()[0]
+
+    def get_winners_count(self, prize_id):
+        conn = sqlite3.connect(self.database)
+        with conn:
+            cur = conn.cursor()
+            cur.execute('SELECT count(*) FROM winners WHERE prize_id = ? ', (prize_id, ))
+            return cur.fetchall()[0][0]
+   
+   
+    
+    def get_rating(self):
+        conn = sqlite3.connect(self.database)
+        with conn:
+            cur = conn.cursor()
+            cur.execute('''
+    SELECT user_name, COUNT(*) AS total FROM users
+INNER JOIN winners ON users.user_id = winners.user_id
+GROUP BY user_name
+ORDER BY total DESC
+LIMIT 5;
+    ''')
+            return cur.fetchall()
     
   
 def hide_img(img_name):
